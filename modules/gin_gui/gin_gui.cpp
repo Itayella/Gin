@@ -60,7 +60,6 @@ namespace gin
 
 #include "images/gin_imageutilities.cpp"
 
-#include "components/gin_componentgrid.cpp"
 #include "components/gin_componentviewer.cpp"
 #include "components/gin_ginlookandfeel.cpp"
 #include "components/gin_mapviewer.cpp"

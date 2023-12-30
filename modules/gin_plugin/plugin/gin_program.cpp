@@ -5,10 +5,10 @@ void Program::loadProcessor (Processor& p)
         return;
 
     for (auto pp : p.getPluginParameters())
-        if (p.loadingState || ! p.isParamLocked (pp))
-            pp->setUserValueNotifingHost (pp->getUserDefaultValue());
+        pp->setUserValueNotifingHost (pp->getUserDefaultValue());
 
-    auto inst = p.state.getChildWithName ("instance").createCopy();
+    int w = p.state.getProperty ("width", -1);
+    int h = p.state.getProperty ("height", -1);
 
     p.state.removeAllProperties (nullptr);
     p.state.removeAllChildren (nullptr);
@@ -16,17 +16,13 @@ void Program::loadProcessor (Processor& p)
     if (state.isValid())
         p.state.copyPropertiesAndChildrenFrom (state, nullptr);
 
-    if (auto oldInst = p.state.getChildWithName ("instance"); oldInst.isValid())
-        p.state.removeChild (oldInst, nullptr);
-
-    if (inst.isValid())
-        p.state.addChild (inst, 0, nullptr);
+    if (w != -1) p.state.setProperty ("width", w, nullptr);
+    if (h != -1) p.state.setProperty ("height", h, nullptr);
 
     for (const auto& s : states)
         if (auto pp = p.getParameter (s.uid))
             if (! pp->isMetaParameter())
-                if (p.loadingState || ! p.isParamLocked (pp))
-                    pp->setUserValueNotifingHost (s.value);
+                pp->setUserValueNotifingHost (s.value);
 }
 
 void Program::saveProcessor (Processor& p)
@@ -49,24 +45,19 @@ void Program::saveProcessor (Processor& p)
 
 juce::File Program::getPresetFile (juce::File programDir)
 {
-    if (file.existsAsFile())
-        return file;
-
     return programDir.getChildFile (juce::File::createLegalFileName (name) + ".xml");
 }
 
 void Program::loadFromFile (juce::File f, bool loadFully)
 {
-    file = f;
-
     juce::XmlDocument doc (f);
     std::unique_ptr<juce::XmlElement> rootE (doc.getDocumentElement());
     if (rootE)
     {
         states.clear();
 
-        name = rootE->getStringAttribute ("name").trim();
-        author = rootE->getStringAttribute ("author").trim();
+        name = rootE->getStringAttribute ("name");
+        author = rootE->getStringAttribute ("author");
         tags = juce::StringArray::fromTokens (rootE->getStringAttribute ("tags"), " ", "");
 
         if (loadFully)
@@ -125,12 +116,11 @@ void Program::saveToDir (juce::File f)
         rootE->addChildElement (paramE);
     }
 
-    juce::File xmlFile = f.getChildFile (juce::File::createLegalFileName (name.trim()) + ".xml");
+    juce::File xmlFile = f.getChildFile (juce::File::createLegalFileName (name) + ".xml");
     xmlFile.replaceWithText (rootE->toString());
 }
 
 void Program::deleteFromDir (juce::File f)
 {
     getPresetFile (f).deleteFile();
-    file = juce::File();
 }

@@ -43,7 +43,7 @@ public:
 class ProcessorOptions
 {
 public:
-    ProcessorOptions();
+	ProcessorOptions();
 
     juce::String    pluginName;
     juce::String    devId;
@@ -55,53 +55,30 @@ public:
 
     bool wantsMidi          = false;
     bool makesMidi          = false;
-    bool useUpdateChecker   = true;
-    bool useNewsChecker     = true;
+	bool useUpdateChecker   = true;
+	bool useNewsChecker     = true;
 
-    juce::StringArray programmingCredits =
-    {
-        "Roland Rabien",
-        "RAW Material Software JUCE Framework"
-    };
-
+	juce::StringArray programmingCredits =
+	{
+		"Roland Rabien",
+		"RAW Material Software JUCE Framework"
+	};
+    
     ProcessorOptions withAdditionalCredits (juce::StringArray names) const
     {
         auto self = *this;
-
+        
         self.programmingCredits.addArray (names);
-
+        
         return self;
     }
-
-    ProcessorOptions withoutUpdateChecker() const
-    {
-        auto self = *this;
-
-        self.useUpdateChecker = false;
-
-        return self;
-
-    }
-
-    ProcessorOptions withoutNewsChecker() const
-    {
-        auto self = *this;
-
-        self.useNewsChecker = false;
-
-        return self;
-
-    }
-    
 };
 
 //==============================================================================
 /** A process with internal and external params
 */
 class Processor : public ProcessorBaseClass,
-                  public juce::ChangeBroadcaster,
-                  private FileSystemWatcher::Listener,
-                  private juce::Timer
+                  public juce::ChangeBroadcaster
 {
 public:
     //==============================================================================
@@ -112,14 +89,12 @@ public:
      you don't need to call init.
      */
     Processor (bool init = true, ProcessorOptions = {});
-    Processor (const BusesProperties& ioLayouts, bool init = true, ProcessorOptions = {});
     ~Processor() override;
 
     void init();
 
     void reset() override;
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
-    void releaseResources() override {}
 
     virtual juce::PropertiesFile* getSettings();
 
@@ -150,8 +125,6 @@ public:
 
     /* Are any parameters currrently smoothing? */
     bool isSmoothing();
-    
-    virtual bool isParamLocked (gin::Parameter*) { return false; }
 
     virtual juce::File getProgramDirectory();
     void loadAllPrograms();
@@ -183,16 +156,14 @@ public:
     //==============================================================================
 
     const ProcessorOptions processorOptions;
-    bool loadingState = false;
 
 public:
-    std::unique_ptr<juce::LookAndFeel> lf;
+    std::unique_ptr<PluginLookAndFeel> lf;
 
     std::map<juce::String, gin::Parameter*> parameterMap;
     juce::OwnedArray<gin::Parameter> internalParameters;
 
     juce::ValueTree state;
-    int versionHint = 1;
 
 protected:
     /* If you plugin has more state than just parameters you need to implement these two functions
@@ -202,14 +173,10 @@ protected:
     virtual void updateState()  {}
 
     void extractProgram (const juce::String& name, const juce::MemoryBlock& data);
-    void extractProgram (const juce::String& name, const void* data, int sz);
 
 private:
-    void folderChanged (const juce::File) override;
-    void timerCallback() override;
-
     std::unique_ptr<juce::PropertiesFile> settings;
-
+    
     std::unique_ptr<gin::Parameter> createParam (juce::String uid, juce::String name, juce::String shortName, juce::String label,
                                                  juce::NormalisableRange<float> range, float defaultValue,
                                                  SmoothingType st,
@@ -219,14 +186,11 @@ private:
 
     void updateParams();
 
-    FileSystemWatcher watcher;
-
-    juce::String currentProgramName;
+    int currentProgram = 0;
     int maxPrograms = 0;
     juce::OwnedArray<Program> programs;
 
     juce::Time lastStateLoad;
-    juce::Time lastProgramsUpdated;
 
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Processor)

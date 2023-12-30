@@ -8,8 +8,8 @@ struct ModSrcId
     ModSrcId (const ModSrcId& other) { id = other.id; }
     ModSrcId& operator= (const ModSrcId& other) { id = other.id; return *this; }
     bool operator== (const ModSrcId& other) const { return other.id == id; }
-    bool isValid() const { return id >= 0; }
-
+    bool isValid() const { return id > 0; }
+    
     int id = -1;
 };
 
@@ -21,8 +21,8 @@ struct ModDstId
     ModDstId (const ModDstId& other) { id = other.id; }
     ModDstId& operator= (const ModDstId& other) { id = other.id; return *this; }
     bool operator== (const ModDstId& other) const { return other.id == id; }
-    bool isValid() const { return id >= 0; }
-
+    bool isValid() const { return id > 0; }
+ 
     int id = -1;
 };
 
@@ -100,13 +100,10 @@ public:
 
         for (auto& src : info.sources)
         {
-            if (src.enabled)
-            {
-                if (src.poly && activeVoice != nullptr)
-                    base += activeVoice->values[src.id.id] * src.depth;
-                else if (! src.poly)
-                    base += sources[src.id.id].monoValue * src.depth;
-            }
+            if (src.poly && activeVoice != nullptr)
+                base += activeVoice->values[src.id.id] * src.depth;
+            else if (! src.poly)
+                base += sources[src.id.id].monoValue * src.depth;
         }
 
         base = juce::jlimit (0.0f, 1.0f, base);
@@ -133,13 +130,10 @@ public:
 
         for (auto& src : info.sources)
         {
-            if (src.enabled)
-            {
-                if (src.poly)
-                    base += voice.values[src.id.id] * src.depth;
-                else
-                    base += sources[src.id.id].monoValue * src.depth;
-            }
+            if (src.poly)
+                base += voice.values[src.id.id] * src.depth;
+            else
+                base += sources[src.id.id].monoValue * src.depth;
         }
 
         base = juce::jlimit (0.0f, 1.0f, base);
@@ -162,7 +156,7 @@ public:
 
         const int paramId = p->getModIndex();
         auto& pi = parameters.getReference (paramId);
-
+        
         auto& info = parameters.getReference (paramId);
 
         if (pi.poly)
@@ -171,29 +165,22 @@ public:
             {
                 if (v->isVoiceActive())
                 {
-                    bool ok = false;
                     float base = p->getValue();
 
                     for (auto& src : info.sources)
                     {
-                        if (src.enabled)
-                        {
-                            if (src.poly)
-                                base += v->values[src.id.id] * src.depth;
-                            else
-                                base += sources[src.id.id].monoValue * src.depth;
-                            ok = true;
-                        }
+                        if (src.poly)
+                            base += v->values[src.id.id] * src.depth;
+                        else
+                            base += sources[src.id.id].monoValue * src.depth;
                     }
 
-                    if (ok)
-                    {
-                        base = juce::jlimit (0.0f, 1.0f, base);
-                        liveValues.add (base);
-                    }
+                    base = juce::jlimit (0.0f, 1.0f, base);
+
+                    liveValues.add (base);
                 }
             }
-
+            
             if (liveValues.size() == 0)
             {
                 float base = p->getValue();
@@ -201,20 +188,20 @@ public:
 
                 for (auto& src : info.sources)
                 {
-                    if (src.enabled && ! src.poly)
+                    if (! src.poly)
                     {
                         base += sources[src.id.id].monoValue * src.depth;
                         ok = true;
                     }
                 }
-
+                
                 if (ok)
                 {
                     base = juce::jlimit (0.0f, 1.0f, base);
                     liveValues.add (base);
                 }
             }
-
+            
         }
         else
         {
@@ -225,18 +212,15 @@ public:
 
             for (auto& src : info.sources)
             {
-                if (src.enabled)
+                if (src.poly && v != nullptr)
                 {
-                    if (src.poly && v != nullptr)
-                    {
-                        ok = true;
-                        base += v->values[src.id.id] * src.depth;
-                    }
-                    else if (! src.poly)
-                    {
-                        ok = true;
-                        base += sources[src.id.id].monoValue * src.depth;
-                    }
+                    ok = true;
+                    base += v->values[src.id.id] * src.depth;
+                }
+                else if (! src.poly)
+                {
+                    ok = true;
+                    base += sources[src.id.id].monoValue * src.depth;
                 }
             }
 
@@ -274,7 +258,7 @@ public:
     void addVoice (ModVoice* v);
     ModSrcId addMonoModSource (const juce::String& id, const juce::String& name, bool bipolar);
     ModSrcId addPolyModSource (const juce::String& id, const juce::String& name, bool bipolar);
-    void addParameter (gin::Parameter* p, bool poly, float smoothingTime = 0.02f);
+    void addParameter (gin::Parameter* p, bool poly);
 
     void setSampleRate (double sampleRate);
     void build();
@@ -298,9 +282,6 @@ public:
     std::vector<std::pair<ModSrcId, float>> getModDepths (ModDstId param);
     void setModDepth (ModSrcId src, ModDstId param, float f);
     void clearModDepth (ModSrcId src, ModDstId param);
-
-    bool getModEnable (ModSrcId src, ModDstId param);
-    void setModEnable (ModSrcId src, ModDstId param, bool b);
 
     //==============================================================================
     class Listener
@@ -336,7 +317,6 @@ private:
     {
         ModSrcId id = {};
         bool poly = false;
-        bool enabled = true;
         float depth = 0.0f;
     };
 
@@ -344,7 +324,6 @@ private:
     {
         gin::Parameter* parameter;
         bool poly = false;
-        float smoothingTime = 0.02f;
         juce::Array<Source> sources;
     };
 

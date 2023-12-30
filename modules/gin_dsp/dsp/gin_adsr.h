@@ -24,8 +24,7 @@ public:
         attack,
         decay,
         sustain,
-        release,
-        finished,
+        release
     };
 
     void setSampleRate (double sr)              { sampleRate = sr;      }
@@ -44,21 +43,6 @@ public:
         jassert (output >= 0.0f && output <= 1.0f);
         return output;
     }
-
-    std::pair<int, float> getCurrentPhase()
-    {
-        if (state == attack)
-            return {0, output};
-        if (state == decay)
-            return {1, output};
-        if (state == sustain)
-            return {2, output};
-        if (state == release)
-            return {3, output};
-
-        return {0,0.0f};
-    }
-
     State getState()                            { return state;         }
 
     void noteOn()                               { state = attack;       }

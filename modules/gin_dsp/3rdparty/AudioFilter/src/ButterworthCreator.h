@@ -51,7 +51,6 @@ inline std::string getNameForButterworthFilterType(ButterworthType type)
 {
     switch (type)
     {
-    case bwNumTypes:
     default:
         assert(false);
         return "";

@@ -131,7 +131,7 @@ public:
         const struct inotify_event* iNotifyEvent;
         char* ptr;
 
-        while (! threadShouldExit())
+        while (true)
         {
             int numRead = read (fd, buf, BUF_LEN);
 
@@ -151,7 +151,7 @@ public:
                 else if (iNotifyEvent->mask & IN_MOVED_TO)    e.fsEvent = FileSystemEvent::fileRenamedNewName;
                 else if (iNotifyEvent->mask & IN_DELETE)      e.fsEvent = FileSystemEvent::fileDeleted;
 
-                juce::ScopedLock sl (lock);
+
                 bool duplicateEvent = false;
                 for (auto existing : events)
                 {
@@ -166,7 +166,6 @@ public:
                     events.add (std::move (e));
             }
 
-            juce::ScopedLock sl (lock);
             if (events.size() > 0)
                 triggerAsyncUpdate();
         }

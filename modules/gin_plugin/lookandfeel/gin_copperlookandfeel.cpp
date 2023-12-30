@@ -285,7 +285,7 @@ juce::PopupMenu::Options CopperLookAndFeel::getOptionsForComboBoxPopupMenu (juce
                                      .withItemThatMustBeVisible (box.getSelectedId())
                                      .withInitiallySelectedItem (box.getSelectedId())
                                      .withMinimumWidth (box.getWidth())
-                                     .withMaximumNumColumns (20);
+                                     .withMaximumNumColumns (1);
 }
 
 //==============================================================================

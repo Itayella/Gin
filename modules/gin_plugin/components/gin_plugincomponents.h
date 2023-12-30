@@ -192,8 +192,6 @@ public:
     PluginSlider (Parameter* parameter_, SliderStyle style, TextEntryBoxPosition textBoxPosition)
       : Slider (style, textBoxPosition), parameter (parameter_)
     {
-        setName (parameter->getShortName());
-
         addListener (this);
         setRange (parameter->getUserRangeStart(), parameter->getUserRangeEnd());
         setValue (parameter->getUserValue(), juce::dontSendNotification);
@@ -407,7 +405,6 @@ public:
         : synthesiser (s)
     {
         startTimerHz (4);
-        addAndMakeVisible (panic);
     }
 
     void timerCallback() override
@@ -438,27 +435,10 @@ public:
         g.fillPath (cpuPath, cpuPath.getTransformToScaleToFit (rc.removeFromLeft (h).toFloat(), true));
         g.drawText (juce::String (cpu) +"%", rc.removeFromLeft (int (h * 1.5)), juce::Justification::centred);
     }
-    
-    void resized() override
-    {
-        auto rc = getLocalBounds().reduced (2);
-        int h = rc.getHeight();
-        
-        rc.removeFromLeft (int (h));
-        rc.removeFromLeft (int (h * 1.5));
-        rc.removeFromLeft (int (h));
-        rc.removeFromLeft (int (h * 1.5));
-        
-        panic.setBounds (rc.removeFromLeft (int (h * 1.5)));
-    }
 
     Synthesiser& synthesiser;
     int voices = 0, cpu = 0;
 
     juce::Path voicePath { parseSVGPath (gin::Assets::voice) };
     juce::Path cpuPath { parseSVGPath (gin::Assets::cpu) };
-    
-    SVGButton panic { "panic", gin::Assets::panic };
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SynthesiserUsage)
 };

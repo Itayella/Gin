@@ -3,7 +3,7 @@ Parameter::Parameter (Processor& p, juce::String uid_, juce::String name_, juce:
                       juce::String label_, float minValue, float maxValue,
                       float intervalValue, float defaultValue_, float skewFactor,
                       std::function<juce::String (const Parameter&, float)> textFunction_)
-  : juce::AudioPluginInstance::HostedParameter (p.versionHint),
+  : juce::AudioPluginInstance::HostedParameter (1),
     processor (p),
     value (defaultValue_),
     defaultValue (defaultValue_),
@@ -22,7 +22,7 @@ Parameter::Parameter (Processor& p, juce::String uid_, juce::String name_, juce:
 Parameter::Parameter (Processor& p, juce::String uid_, juce::String name_, juce::String shortName_,
                       juce::String label_, juce::NormalisableRange<float> range_, float defaultValue_,
                       std::function<juce::String (const Parameter&, float)> textFunction_)
-  : juce::AudioPluginInstance::HostedParameter (p.versionHint),
+  : juce::AudioPluginInstance::HostedParameter (1),
     processor (p),
     range (range_),
     value (defaultValue_),
@@ -162,7 +162,7 @@ juce::String Parameter::getName (int maximumStringLength) const
 
 int Parameter::getNumSteps() const
 {
-    if (juce::exactlyEqual (range.interval, 0.0f))
+    if (juce::approximatelyEqual (range.interval, 0.0f))
         return 0;
     return juce::roundToInt ((range.end - range.start) / range.interval);
 }
@@ -173,10 +173,6 @@ juce::String Parameter::getText (float val, int /*maximumStringLength*/) const
         return textFunction (*this, range.convertFrom0to1 (val));
     
     auto uv = range.snapToLegalValue (range.convertFrom0to1 (val));
-    
-    if (juce::exactlyEqual (range.interval, 1.0f))
-        return juce::String (int (uv));
-    
     return formatNumber (uv);
 }
 

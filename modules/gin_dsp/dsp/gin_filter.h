@@ -113,7 +113,7 @@ public:
             res *= float (AudioFilter::Response::getResponsePoint (biquadRes, atFreq, sampleRate));
         }
 
-        if (slope >= db24)
+        if (slope >= db12)
         {
             const int maxOrder = 2;
             AudioFilter::BiquadParamCascade biquadRes { 2 * ((maxOrder + 1) / 2) };

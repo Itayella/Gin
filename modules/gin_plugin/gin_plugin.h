@@ -72,11 +72,6 @@
 
 #include <map>
 
-namespace juce
-{
-class StandaloneFilterWindow;
-}
-
 namespace gin
 {
 
@@ -102,7 +97,6 @@ bool wantsAccessibleKeyboard (juce::Component&);
 
 #include "lookandfeel/gin_images.h"
 #include "lookandfeel/gin_copperlookandfeel.h"
-#include "lookandfeel/gin_resources.h"
 
 #include "components/gin_headers.h"
 #include "components/gin_parambox.h"
@@ -110,6 +104,5 @@ bool wantsAccessibleKeyboard (juce::Component&);
 #include "components/gin_plugineditor.h"
 #include "components/gin_controlbox.h"
 #include "components/gin_scaledplugineditor.h"
-#include "components/gin_standaloneapp.h"
 
 }

@@ -42,15 +42,6 @@ Processor::Processor (bool init_, ProcessorOptions po)
         init();
 }
 
-Processor::Processor (const BusesProperties& ioLayouts, bool init_, ProcessorOptions po)
-    : ProcessorBaseClass (ioLayouts), processorOptions (po)
-{
-    lf = std::make_unique<gin::CopperLookAndFeel>();
-
-    if (init_)
-        init();
-}
-
 Processor::~Processor()
 {
 }
@@ -58,11 +49,7 @@ Processor::~Processor()
 void Processor::init()
 {
     state = juce::ValueTree (juce::Identifier ("state"));
-    state.getOrCreateChildWithName ("instance", nullptr);
     loadAllPrograms();
-    
-    watcher.addListener (this);
-    watcher.addFolder (getProgramDirectory());
 }
 
 juce::PropertiesFile* Processor::getSettings()
@@ -254,13 +241,7 @@ int Processor::getNumPrograms()
 
 int Processor::getCurrentProgram()
 {
-    for (auto idx = 0; auto p : programs)
-    {
-        if (p->name == currentProgramName)
-            return idx;
-        idx++;
-    }
-    return 0;
+    return currentProgram;
 }
 
 void Processor::setCurrentProgram (int index)
@@ -278,15 +259,11 @@ void Processor::setCurrentProgram (int index)
             p->loadFromFile (p->getPresetFile (getProgramDirectory()), true);
 
         p->loadProcessor (*this);
-        currentProgramName = p->name;
+        currentProgram = index;
 
         updateHostDisplay();
         sendChangeMessage();
         stateUpdated();
-    }
-    else
-    {
-        currentProgramName = {};
     }
 }
 
@@ -301,6 +278,7 @@ Program* Processor::getProgram (const juce::String& name)
 
 void Processor::setCurrentProgram (juce::String name)
 {
+    int index = 0;
     for (auto p : programs)
     {
         if (p->name == name)
@@ -309,13 +287,14 @@ void Processor::setCurrentProgram (juce::String name)
                 p->loadFromFile (p->getPresetFile (getProgramDirectory()), true);
 
             p->loadProcessor (*this);
-            currentProgramName = name;
+            currentProgram = index;
 
             updateHostDisplay();
             sendChangeMessage();
             stateUpdated();
             return;
         }
+        index++;
     }
 }
 
@@ -336,33 +315,8 @@ bool Processor::hasProgram (juce::String name)
     return false;
 }
 
-void Processor::folderChanged (const juce::File)
-{
-    auto now = juce::Time::getCurrentTime();
-    if (now - lastProgramsUpdated > juce::RelativeTime::seconds (1.0))
-        startTimer (150);
-}
-
-void Processor::timerCallback()
-{
-    stopTimer();
-    loadAllPrograms();
-    
-    if (auto ed = dynamic_cast<ProcessorEditor*> (getActiveEditor()))
-    {
-        ed->refreshProgramsList();
-    }
-    else if (auto sed = dynamic_cast<ScaledPluginEditor*> (getActiveEditor()))
-    {
-        if (auto ied = dynamic_cast<ProcessorEditor*> (sed->editor.get()))
-            ied->refreshProgramsList();
-    }
-}
-
 void Processor::changeProgramName (int index, const juce::String& newName)
 {
-    lastProgramsUpdated = juce::Time::getCurrentTime();
-    
     programs[index]->deleteFromDir (getProgramDirectory());
     programs[index]->name = newName;
     programs[index]->saveToDir (getProgramDirectory());
@@ -373,8 +327,6 @@ void Processor::changeProgramName (int index, const juce::String& newName)
 
 void Processor::loadAllPrograms()
 {
-    lastProgramsUpdated = juce::Time::getCurrentTime();
-    
     updateState();
 
     programs.clear();
@@ -403,18 +355,11 @@ void Processor::loadAllPrograms()
 
 void Processor::extractProgram (const juce::String& name, const juce::MemoryBlock& data)
 {
-    extractProgram (name, data.getData(), int (data.getSize()));
-}
-
-void Processor::extractProgram (const juce::String& name, const void* data, int sz)
-{
-    lastProgramsUpdated = juce::Time::getCurrentTime();
-    
     juce::File dir = getProgramDirectory();
     auto f = dir.getChildFile (name);
     if (! f.existsAsFile())
     {
-        f.replaceWithData (data, size_t (sz));
+        f.replaceWithData (data.getData(), data.getSize());
 
         auto program = new Program();
         program->loadFromFile (f, false);
@@ -424,8 +369,6 @@ void Processor::extractProgram (const juce::String& name, const void* data, int 
 
 void Processor::saveProgram (juce::String name, juce::String author, juce::String tags)
 {
-    lastProgramsUpdated = juce::Time::getCurrentTime();
-    
     updateState();
 
     for (int i = programs.size(); --i >= 0;)
@@ -440,14 +383,7 @@ void Processor::saveProgram (juce::String name, juce::String author, juce::Strin
     newProgram->saveToDir (getProgramDirectory());
 
     programs.add (newProgram);
-    std::sort (programs.begin(), programs.end(), [] (auto a, auto b) 
-    {
-        if (a->name == "Default") return true;
-        if (b->name == "Default") return false;
-        return a->name.compareIgnoreCase (b->name) < 0;
-    });
-    
-    currentProgramName = name;
+    currentProgram = programs.size() - 1;
 
     updateHostDisplay();
     sendChangeMessage();
@@ -455,20 +391,11 @@ void Processor::saveProgram (juce::String name, juce::String author, juce::Strin
 
 void Processor::deleteProgram (int index)
 {
-    lastProgramsUpdated = juce::Time::getCurrentTime();
-    
-    auto oldName = programs[index]->name;
     programs[index]->deleteFromDir (getProgramDirectory());
     programs.remove (index);
-    
-    if (currentProgramName == oldName)
-    {
-        if (auto p = programs[std::max (0, index - 1)])
-            currentProgramName = p->name;
-        else
-            currentProgramName = {};
-    }
-   
+    if (index <= currentProgram)
+        currentProgram--;
+
     updateHostDisplay();
     sendChangeMessage();
 }
@@ -498,7 +425,7 @@ void Processor::getStateInformation (juce::MemoryBlock& destData)
     if (state.isValid())
         rootE->addChildElement (state.createXml().release());
 
-    rootE->setAttribute ("programName", currentProgramName);
+    rootE->setAttribute ("program", currentProgram);
 
     for (auto p : getPluginParameters())
     {
@@ -522,8 +449,6 @@ void Processor::getStateInformation (juce::MemoryBlock& destData)
 
 void Processor::setStateInformation (const void* data, int sizeInBytes)
 {
-    juce::ScopedValueSetter<bool> (loadingState, true);
-    
     juce::XmlDocument doc (juce::String::fromUTF8 ((const char*)data, sizeInBytes));
     std::unique_ptr<juce::XmlElement> rootE (doc.getDocumentElement());
     if (rootE)
@@ -534,15 +459,6 @@ void Processor::setStateInformation (const void* data, int sizeInBytes)
             state.removeAllProperties (nullptr);
             state.removeAllChildren (nullptr);
             state.copyPropertiesAndChildrenFrom (srcState, nullptr);
-
-            if (auto inst = state.getChildWithName ("instance"); ! inst.isValid())
-            {
-                inst = juce::ValueTree ("instance");
-
-                for (auto name : { "width", "height", "editorScale" })
-                    if (state.hasProperty (name))
-                        inst.setProperty (name, state.getProperty (name, {}), nullptr);
-            }
         }
         else if (rootE->hasAttribute ("valueTree"))
         {
@@ -557,18 +473,7 @@ void Processor::setStateInformation (const void* data, int sizeInBytes)
             }
         }
 
-        if (rootE->hasAttribute ("programName"))
-        {
-            currentProgramName = rootE->getStringAttribute ("programName");
-        }
-        else
-        {
-            auto currentProgramIdx = rootE->getIntAttribute ("program");
-            if (auto p = programs[currentProgramIdx])
-                currentProgramName = p->name;
-            else
-                currentProgramName = {};
-        }
+        currentProgram = rootE->getIntAttribute ("program");
 
         juce::XmlElement* paramE = rootE->getChildByName ("param");
         while (paramE)

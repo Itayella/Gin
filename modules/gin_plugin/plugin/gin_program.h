@@ -20,7 +20,6 @@ public:
     void saveToDir (juce::File programDir);
     void deleteFromDir (juce::File programDir);
 
-    juce::File file;
     juce::String name;
     juce::String author;
     juce::StringArray tags;

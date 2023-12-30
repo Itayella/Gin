@@ -56,21 +56,16 @@ void RIFFParser::parse (const void* data, size_t size)
 
     auto d = (const uint8_t*)data;
 
-
-    RIFFAtoms::RIFF riff;
-    std::memcpy (&riff, d, sizeof (riff));
-
+    auto riff = (const RIFFAtoms::RIFF*)d;
     d += sizeof (RIFFAtoms::RIFF);
 
-    if (! RIFFAtoms::isTag (&riff.dwRIFF, "RIFF"))
+    if (! RIFFAtoms::isTag (&riff->dwRIFF, "RIFF"))
         return;
 
     while (d < (uint8_t*)data + size)
     {
-        RIFFAtoms::CHUNK chunk;
-        std::memcpy (&chunk, d, sizeof (chunk));
-
-        if (RIFFAtoms::isTag (&chunk.dwFourCC, "LIST"))
+        auto chunk = (const RIFFAtoms::CHUNK*)d;
+        if (RIFFAtoms::isTag (&chunk->dwFourCC, "LIST"))
             handleList (d);
         else
             handleChunk (d);
@@ -79,18 +74,14 @@ void RIFFParser::parse (const void* data, size_t size)
 
 void RIFFParser::handleList (const uint8_t *&d)
 {
-    RIFFAtoms::LIST list;
-    std::memcpy (&list, d, sizeof (list));
-
-    auto e = d + 8 + list.dwSize;
+    auto list = (RIFFAtoms::LIST*)d;
+    auto e = d + 8 + list->dwSize;
     d += sizeof (RIFFAtoms::LIST);
 
     while (d < e)
     {
-        RIFFAtoms::CHUNK chunk;
-        std::memcpy (&chunk, d, sizeof (chunk));
-
-        if (RIFFAtoms::isTag (&chunk.dwFourCC, "LIST"))
+        auto chunk = (RIFFAtoms::CHUNK*)d;
+        if (RIFFAtoms::isTag (&chunk->dwFourCC, "LIST"))
             handleList (d);
         else
             handleChunk (d);
@@ -99,13 +90,12 @@ void RIFFParser::handleList (const uint8_t *&d)
 
 void RIFFParser::handleChunk (const uint8_t*& d)
 {
-    RIFFAtoms::CHUNK chunk;
-    std::memcpy (&chunk, d, sizeof (chunk));
+    auto chunk = (RIFFAtoms::CHUNK*)d;
 
-    onChunk (chunk.dwFourCC, d + sizeof (RIFFAtoms::CHUNK), chunk.dwSize);
+    onChunk (chunk->dwFourCC, d + sizeof (RIFFAtoms::CHUNK), chunk->dwSize);
 
     d += sizeof (RIFFAtoms::CHUNK);
-    d += chunk.dwSize;
-    if (chunk.dwSize % 2 == 1)
+    d += chunk->dwSize;
+    if (chunk->dwSize % 2 == 1)
         d += 1;
 }

@@ -37,13 +37,13 @@ public:
                juce::NormalisableRange<float> range, float defaultValue,
                std::function<juce::String (const Parameter&, float)> textFunction = nullptr);
 
-    juce::String getUid() const         { return uid;       }
+    juce::String getUid()               { return uid;       }
     void setInternal (bool i)           { internal = i;     }
-    bool isInternal() const             { return internal;  }
+    bool isInternal()                   { return internal;  }
     void setModIndex (int i)            { modIndex = i;     }
-    int getModIndex() const             { return modIndex;  }
+    int getModIndex()                   { return modIndex;  }
     void setModMatrix (ModMatrix* m)    { modMatrix = m;    }
-    ModMatrix* getModMatrix() const     { return modMatrix; }
+    ModMatrix* getModMatrix()           { return modMatrix; }
 
     virtual void prepareToPlay (double /*sampleRate*/, int /*samplesPerBlock*/)    {}
     virtual void reset()                                                           {}
@@ -75,8 +75,8 @@ public:
     juce::String getUserValueText() const               { return getText (getValue(), 1000) + label; }
     juce::String userValueToText (float val)            { return getText (range.convertTo0to1 (val), 1000) + label; }
 
-    bool isOnOff()                                      { return juce::exactlyEqual (range.start, 0.0f) && juce::exactlyEqual (range.end, range.interval); }
-    bool isOn()                                         { return ! juce::exactlyEqual (range.start, getUserValue()); }
+    bool isOnOff()                                      { return juce::approximatelyEqual (range.start, 0.0f) && juce::approximatelyEqual (range.end, range.interval); }
+    bool isOn()                                         { return ! juce::approximatelyEqual (range.start, getUserValue()); }
 
     std::function<float (float)> conversionFunction;
 

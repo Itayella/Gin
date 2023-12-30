@@ -169,8 +169,8 @@ template <class F, class I> class PlateReverb
         // Scale the taps
         for (I i = 0; i < kNumTaps; i++)
         {
-            leftTaps[size_t (i)] = baseLeftTaps[size_t (i)] * sizeRatio;
-            rightTaps[size_t (i)] = baseRightTaps[size_t (i)] * sizeRatio;
+            leftTaps[i] = baseLeftTaps[i] * sizeRatio;
+            rightTaps[i] = baseRightTaps[i] * sizeRatio;
         }
     }
 
@@ -197,10 +197,10 @@ template <class F, class I> class PlateReverb
         sum = lowpass.process (sum);
 
         // Diffusers
-        sum = diffusers[0]->process (sum, (F)diffusers[0]->getSize());
-        sum = diffusers[1]->process (sum, (F)diffusers[1]->getSize());
-        sum = diffusers[2]->process (sum, (F)diffusers[2]->getSize());
-        sum = diffusers[3]->process (sum, (F)diffusers[3]->getSize());
+        sum = diffusers[0]->process (sum, diffusers[0]->getSize());
+        sum = diffusers[1]->process (sum, diffusers[1]->getSize());
+        sum = diffusers[2]->process (sum, diffusers[2]->getSize());
+        sum = diffusers[3]->process (sum, diffusers[3]->getSize());
 
         // Tanks
         F leftIn = sum + rightTank.out * decayRate;
@@ -316,8 +316,8 @@ template <class F, class I> class PlateReverb
 
             // For speed, create a bigger buffer than we really need.
             I bufferSize = ceilPowerOfTwo (size);
-            buffer.reset (new F[size_t (bufferSize)]);
-            std::memset (buffer.get(), 0, size_t (bufferSize) * sizeof(F));
+            buffer.reset (new F[bufferSize]);
+            std::memset (&buffer[0], 0, bufferSize * sizeof(F));
 
             mask = bufferSize - 1;
 
@@ -328,7 +328,7 @@ template <class F, class I> class PlateReverb
 
         inline void push(F val)
         {
-            buffer[size_t (writeIdx++)] = val;
+            buffer[writeIdx++] = val;
             writeIdx &= mask;
         }
 
@@ -342,8 +342,8 @@ template <class F, class I> class PlateReverb
             F frac = 1 - (delay - d);
 
             I readIdx = (writeIdx - 1) - d;
-            F a = buffer[size_t ((readIdx - 1) & mask)];
-            F b = buffer[size_t (readIdx & mask)];
+            F a = buffer[(readIdx - 1) & mask];
+            F b = buffer[readIdx & mask];
 
             return a + (b - a) * frac;
         }
@@ -358,7 +358,7 @@ template <class F, class I> class PlateReverb
 
         void reset()
         {
-            std::memset (buffer.get(), 0, size_t (ceilPowerOfTwo (size)) * sizeof (F));
+            std::memset (&buffer[0], 0, ceilPowerOfTwo (size) * sizeof (F));
             writeIdx = 0;
         }
 
@@ -526,10 +526,10 @@ template <class F, class I> class PlateReverb
 
         void reset()
         {
-            if (apf1) apf1->reset();
-            if (apf2) apf2->reset();
-            if (del1) del1->reset();
-            if (del2) del2->reset();
+            apf1->reset();
+            apf2->reset();
+            del1->reset();
+            del2->reset();
             damping.reset();
             lfo.reset();
         }

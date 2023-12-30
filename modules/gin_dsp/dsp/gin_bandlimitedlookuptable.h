@@ -46,24 +46,14 @@ public:
             auto freq = getMidiNoteInHertz (note);
 
             auto& t = tables.emplace_back (std::vector<float>());
-            t.resize (size_t (tableSize));
+            t.resize (tableSize);
 
             for (auto i = 0; i < tableSize; i++)
             {
                 auto v = juce::jmap (float (i), 0.0f, tableSize - 1.0f, 0.0f, 1.0f);
-                t[size_t (i)] = function (v, freq, sampleRate);
+                t[i] = function (v, freq, sampleRate);
             }
         }
-    }
-    
-    inline int tableIndexForNote (float note)
-    {
-        return juce::jlimit (0, int (tables.size() - 1), int ((note - 0.5) / notesPerTable));
-    }
-    
-    inline std::vector<float>* tableForNote (float note)
-    {
-        return &tables[size_t (tableIndexForNote (note))];
     }
 
     inline float process (float note, float phase)
@@ -73,30 +63,8 @@ public:
 
         jassert (pos >= 0 && pos < tableSize);
 
-        return tables[size_t (tableIndex)][size_t (pos)];
+        return tables[tableIndex][pos];
     }
-    
-   #if GIN_HAS_SIMD
-    inline mipp::Reg<float> process (float note, mipp::Reg<float> phase)
-    {
-        static_assert (mipp::N<float>() == 4);
-
-        auto tableIndex = juce::jlimit (0, int (tables.size() - 1), int ((note - 0.5) / notesPerTable));
-        phase *= float (tableSize);
-        
-        float pos[4];
-        phase.store (pos);
-
-        mipp::Reg<float> res =
-        {
-            tables[size_t (tableIndex)][size_t (pos[0])],
-            tables[size_t (tableIndex)][size_t (pos[1])],
-            tables[size_t (tableIndex)][size_t (pos[2])],
-            tables[size_t (tableIndex)][size_t (pos[3])],
-        };
-        return res;
-    }
-   #endif
 
     inline float get (int tableIndex, float phase)
     {
@@ -104,10 +72,10 @@ public:
 
         jassert (pos >= 0 && pos < tableSize);
 
-        return tables[size_t (tableIndex)][size_t (pos)];
+        return tables[tableIndex][pos];
     }
 
-    void loadFromBuffer (std::unique_ptr<juce::dsp::FFT>& fft, float playbackSampleRate, juce::AudioSampleBuffer& buffer, float fileSampleRate, int notesPerTable);
+    void loadFromBuffer (float playbackSampleRate, juce::AudioSampleBuffer& buffer, float fileSampleRate, int notesPerTable);
 
     std::vector<std::vector<float>> tables;
 

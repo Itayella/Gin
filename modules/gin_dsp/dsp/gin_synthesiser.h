@@ -39,21 +39,13 @@ public:
         instrument.enableLegacyMode();
         setPitchbendTrackingMode (juce::MPEInstrument::allNotesOnChannel);
     }
-    
+
     void setMono (bool m)           { mono = m;         }
     void setNumVoices (int v)       { numVoices = v;    }
     void setLegato (bool l)         { legato = l;       }
     void setGlissando (bool g)      { glissando = g;    }
     void setPortamento (bool p)     { portamento = p;   }
     void setGlideRate (float r )    { glideRate = r;    }
-    
-    void turnOffAllVoices (bool allowTailOff) override
-    {
-        juce::MPESynthesiser::turnOffAllVoices (allowTailOff);
-        
-        noteStack.clearQuick();
-        lastNote = -1;
-    }
 
     void setMPE (bool newMPE)
     {
@@ -69,40 +61,9 @@ public:
             }
             else
             {
-                enableLegacyMode (pitchbend);
+                instrument.enableLegacyMode();
                 setPitchbendTrackingMode (juce::MPEInstrument::allNotesOnChannel);
             }
-        }
-    }
-
-    void handleMidiEvent (const juce::MidiMessage& message) override
-    {
-        juce::MPESynthesiser::handleMidiEvent (message);
-
-        if (! mpe && message.isPitchWheel())
-        {
-            for (auto v : voices)
-            {
-                if (auto sv = dynamic_cast<SynthesiserVoice*> (v))
-                {
-                    if (sv->isPlayingButReleased())
-                    {
-                        auto note = sv->getCurrentlyPlayingNote();
-                        note.totalPitchbendInSemitones = juce::MPEValue::from14BitInt (message.getPitchWheelValue()).asSignedFloat() * getLegacyModePitchbendRange();
-                        sv->setCurrentlyPlayingNote (note);
-                    }
-                }
-            }
-        }
-    }
-
-    void setPitchBendRange (int newPB)
-    {
-        if (newPB != pitchbend)
-        {
-            pitchbend = newPB;
-            if (! mpe)
-                setLegacyModePitchbendRange (pitchbend);
         }
     }
 
@@ -177,7 +138,7 @@ public:
     void noteReleasedMonoGlide (juce::MPENote finishedNote)
     {
         int noteIdx = noteStack.indexOf (finishedNote);
-        if (noteIdx < 0) return;
+        jassert (noteIdx >= 0);
         bool currentNote = noteIdx == noteStack.size() - 1;
         noteStack.remove (noteIdx);
 
@@ -213,7 +174,7 @@ public:
     void noteReleasedMono (juce::MPENote finishedNote)
     {
         int noteIdx = noteStack.indexOf (finishedNote);
-        if (noteIdx < 0) return;
+        jassert (noteIdx >= 0);
         bool currentNote = noteIdx == noteStack.size() - 1;
         noteStack.remove (noteIdx);
 
@@ -500,7 +461,6 @@ private:
     float glideRate = 500.0f;
     int numVoices = 32;
     int lastNote = -1;
-    int pitchbend = 2;
     bool mpe = false;
     double blockStartTime = 0, timeUsed = 0, timeAvailable = 0;
 };

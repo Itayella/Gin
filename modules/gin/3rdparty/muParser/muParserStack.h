@@ -70,11 +70,6 @@ namespace mu
       virtual ~ParserStack()
       {}
 
-      ParserStack (const ParserStack& other)
-          : m_Stack (other.m_Stack)
-      {
-      }
-
       //---------------------------------------------------------------------------
       /** \brief Pop a value from the stack.
 

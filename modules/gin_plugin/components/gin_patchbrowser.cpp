@@ -14,47 +14,27 @@ PatchBrowser::PatchBrowser (Processor& p) : proc (p)
     presets.setOutlineThickness (1);
 
     authors.setMultipleSelectionEnabled (true);
+    authors.setClickingTogglesRowSelection (true);
     tags.setMultipleSelectionEnabled (true);
-
-    auto inst = proc.state.getChildWithName ("instance");
-    selectedAuthors = juce::StringArray::fromTokens (inst.getProperty ("selectedAuthors", {}).toString(), "|", "");
-    selectedTags    = juce::StringArray::fromTokens (inst.getProperty ("selectedTags", {}).toString(), "|", "");
-    selectedPresets = juce::StringArray::fromTokens (inst.getProperty ("selectedPresets", {}).toString(), "|", "");
+    tags.setClickingTogglesRowSelection (true);
 
     refresh();
 }
 
-void PatchBrowser::selectionUpdated()
+void PatchBrowser::updateSelection()
 {
-    if (updatingSelection)
-        return;
-    
     selectedAuthors.clear();
     selectedTags.clear();
-    selectedPresets.clear();
 
     for (int i = 0; i < authors.getNumSelectedRows(); i++)
-        if (auto row = authors.getSelectedRow (i); row > 0)
-            selectedAuthors.add (currentAuthors[row]);
+        selectedAuthors.add (currentAuthors[authors.getSelectedRow (i)]);
 
     for (int i = 0; i < tags.getNumSelectedRows(); i++)
-        if (auto row = tags.getSelectedRow (i); row > 0)
-        selectedTags.add (currentTags[row]);
-    
-    for (int i = 0; i < presets.getNumSelectedRows(); i++)
-        selectedPresets.add (currentPresets[presets.getSelectedRow (i)]);
-
-    auto inst = proc.state.getChildWithName ("instance");
-    inst.setProperty ("selectedAuthors",  selectedAuthors.joinIntoString ("|"), nullptr);
-    inst.setProperty ("selectedTags",     selectedTags.joinIntoString ("|"), nullptr);
-    inst.setProperty ("selectedPresets",  selectedPresets.joinIntoString ("|"), nullptr);
+        selectedTags.add (currentTags[tags.getSelectedRow (i)]);
 }
 
 void PatchBrowser::refresh()
 {
-    if (updatingSelection)
-        return;
-    
     currentAuthors.clear();
     currentTags.clear();
     currentPresets.clear();
@@ -64,16 +44,16 @@ void PatchBrowser::refresh()
         if (program->author.isNotEmpty())
             currentAuthors.addIfNotAlreadyThere (program->author);
 
+        for (auto t : program->tags)
+            if (t.isNotEmpty())
+                currentTags.addIfNotAlreadyThere (t);
+
         if (program->name == "Default")
             continue;
 
         if (! selectedAuthors.isEmpty())
             if (! selectedAuthors.contains (program->author))
                 continue;
-        
-        for (auto t : program->tags)
-            if (t.isNotEmpty())
-                currentTags.addIfNotAlreadyThere (t);
 
         if (! selectedTags.isEmpty())
         {
@@ -93,41 +73,10 @@ void PatchBrowser::refresh()
     currentAuthors.sort (true);
     currentTags.sort (true);
     currentPresets.sort (true);
-    
-    currentAuthors.insert (0, "<All>");
-    currentTags.insert (0, "<All>");
 
     authors.updateContent();
     tags.updateContent();
     presets.updateContent();
-    
-    juce::ScopedValueSetter<bool> svs (updatingSelection, true);
-    
-    authors.deselectAllRows();
-    if (selectedAuthors.size() > 0)
-    {
-        for (auto a : selectedAuthors)
-            authors.selectRow (currentAuthors.indexOf (a), true, false);
-    }
-    else
-    {
-        authors.selectRow (0, true, false);
-    }
-
-    tags.deselectAllRows();
-    if (selectedTags.size() > 0)
-    {
-        for (auto t : selectedTags)
-            tags.selectRow (currentTags.indexOf (t), true, false);
-    }
-    else
-    {
-        tags.selectRow (0, true, false);
-    }
-
-    presets.deselectAllRows();
-    for (auto p : selectedPresets)
-        presets.selectRow (currentPresets.indexOf (p), true, false);
 
     repaint();
 }
@@ -208,7 +157,6 @@ void PatchBrowser::editPreset (int row)
             }
             else if (txt.isNotEmpty())
             {
-                p->loadFromFile (p->getPresetFile (proc.getProgramDirectory()), true);
                 p->deleteFromDir (proc.getProgramDirectory());
                 p->name = txt;
                 p->tags = juce::StringArray::fromTokens (tag, " ", "");
@@ -234,7 +182,7 @@ int PatchBrowser::AuthorsModel::getNumRows()
 
 void PatchBrowser::AuthorsModel::selectedRowsChanged (int)
 {
-    owner.selectionUpdated();
+    owner.updateSelection();
     owner.refresh();
 }
 
@@ -268,7 +216,7 @@ int PatchBrowser::TagsModel::getNumRows()
 
 void PatchBrowser::TagsModel::selectedRowsChanged (int)
 {
-    owner.selectionUpdated();
+    owner.updateSelection();
     owner.refresh();
 }
 
@@ -298,11 +246,6 @@ PatchBrowser::PresetsModel::PresetsModel (PatchBrowser& o)
 int PatchBrowser::PresetsModel::getNumRows()
 {
     return owner.currentPresets.size();
-}
-
-void PatchBrowser::PresetsModel::selectedRowsChanged (int)
-{
-    owner.selectionUpdated();
 }
 
 void PatchBrowser::PresetsModel::paintListBoxItem (int row, juce::Graphics& g, int w, int h, bool selected)

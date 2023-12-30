@@ -24,7 +24,7 @@
   license:              BSD
   minimumCppStandard:   20
 
-  dependencies:         gin gin_simd juce_core juce_audio_utils juce_dsp
+  dependencies:         gin juce_core juce_audio_utils juce_dsp
 
  END_JUCE_MODULE_DECLARATION
 
@@ -33,7 +33,7 @@
 
 #pragma once
 
-#ifndef JUCE_MODULE_AVAILABLE_gin_dsp
+#ifndef JUCE_MODULE_AVAILABLE_gin
  /* If you fail to make sure that all your compile units are building JUCE with the same set of
     option flags, then there's a risk that different compile units will treat the classes as having
     different memory layouts, leading to very nasty memory corruption errors when they all get
@@ -61,7 +61,6 @@
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <juce_dsp/juce_dsp.h>
 #include <gin/gin.h>
-#include <gin_simd/gin_simd.h>
 
 #if defined (__clang__)
  #pragma clang diagnostic pop
@@ -69,9 +68,7 @@
 
 #include <map>
 #include <random>
-#ifndef _USE_MATH_DEFINES
- #define _USE_MATH_DEFINES
-#endif
+#define _USE_MATH_DEFINES
 #include <cmath>
 
 JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wfloat-equal")

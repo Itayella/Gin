@@ -48,51 +48,22 @@ private:
 //==============================================================================
 /** A header button with title text
  */
-class HeaderButton : public juce::Button,
-                     public juce::DragAndDropTarget,
-                     private juce::Timer
+class HeaderButton : public juce::Button
 {
 public:
     HeaderButton (const juce::String& name_)
         : juce::Button (name_)
     {
     }
-    
-    bool isInterestedInDragSource (const SourceDetails&) override
-    {
-        return true;
-    }
-    
-    void itemDragEnter (const SourceDetails&) override
-    {
-        startTimer (300);
-    }
-    
-    void itemDragExit (const SourceDetails&) override
-    {
-        stopTimer();
-    }
-    
-    void itemDropped (const SourceDetails&) override
-    {
-        stopTimer();
-    }
-    
-    void timerCallback() override
-    {
-        triggerClick();
-    }
 
 private:
-    void paintButton (juce::Graphics& g, bool, bool) override
+    void paintButton (juce::Graphics& g, bool, bool)
     {
         auto f = juce::Font ().withPointHeight (10.0).withExtraKerningFactor (0.25);
 
         g.setColour (getToggleState() ? findColour (PluginLookAndFeel::accentColourId).withAlpha (0.6f) : findColour (PluginLookAndFeel::whiteColourId).withAlpha (0.6f));
         g.drawText (getButtonText().toUpperCase(), getLocalBounds(), juce::Justification::centred);
     }
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(HeaderButton)
 };
 
 
@@ -126,7 +97,7 @@ public:
             auto h = new HeaderButton (n);
             h->onClick = [this, num]
             {
-                headerParam->setUserValue (float (num));
+                headerParam->setUserValue (num);
             };
             header.addAndMakeVisible (h);
             headers.add (h);
@@ -160,26 +131,20 @@ public:
         addAndMakeVisible (c);
     }
 
-    void addControl (juce::Component* c)
+    void addControl (Component* c)
     {
         controls.add (c);
         frame.addAndMakeVisible (c);
     }
 
-    void addControl (juce::Component* p, juce::Component* c)
-    {
-        controls.add (c);
-        p->addAndMakeVisible (c);
-    }
-
-    void addControl (juce::Component* c, int x, int y, int cx = 1, int cy = 1)
+    void addControl (Component* c, int x, int y, int cx = 1, int cy = 1)
     {
         c->setBounds (getGridArea (x, y, cx, cy));
         controls.add (c);
         frame.addAndMakeVisible (c);
     }
 
-    void addControl (juce::Component* c, float x, float y, float cx = 1.0f, float cy = 1.0f)
+    void addControl (Component* c, float x, float y, float cx = 1.0f, float cy = 1.0f)
     {
         c->setBounds (getGridArea (x, y, cx, cy));
         controls.add (c);

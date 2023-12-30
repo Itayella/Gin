@@ -4,7 +4,7 @@ class PatchBrowser : public juce::Component
 public:
     PatchBrowser (Processor& p);
 
-    void selectionUpdated();
+    void updateSelection();
     void refresh();
     void resized() override;
 
@@ -41,7 +41,6 @@ public:
         PresetsModel (PatchBrowser& o);
 
         int getNumRows() override;
-        void selectedRowsChanged (int) override;
         void paintListBoxItem (int row, juce::Graphics& g, int w, int h, bool selected) override;
         void listBoxItemDoubleClicked (int row, const juce::MouseEvent&) override;
         void listBoxItemClicked (int row, const juce::MouseEvent& e) override;
@@ -55,7 +54,6 @@ public:
 
     juce::ListBox authors { "", &authorsModel }, tags { "", &tagsModel }, presets { "", &presetsModel };
 
-    bool updatingSelection = false;
     juce::StringArray currentAuthors, currentTags, currentPresets;
-    juce::StringArray selectedAuthors, selectedTags, selectedPresets;
+    juce::StringArray selectedAuthors, selectedTags;
 };

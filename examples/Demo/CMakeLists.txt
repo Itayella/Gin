@@ -19,7 +19,7 @@ if (APPLE)
 			-Wunreachable-code -Winconsistent-missing-destructor-override -Wshift-sign-overflow -Wnullable-to-nonnull-conversion -Wuninitialized -Wno-missing-field-initializers 
 			-Wno-ignored-qualifiers -Wno-missing-braces -Wno-char-subscripts -Wno-unused-private-field -fno-aligned-allocation -Wunused-private-field -Wunreachable-code 
 			-Wenum-compare -Wshadow -Wfloat-conversion -Wshadow-uncaptured-local -Wshadow-field -Wsign-compare -Wdeprecated-this-capture -Wimplicit-float-conversion 
-			-ffast-math -fno-finite-math-only -Wfloat-equal -Wpedantic -Wmissing-field-initializers -Wdeprecated -Wcast-align
+			-ffast-math -fno-finite-math-only -Wfloat-equal
 			"$<$<CONFIG:RELEASE>:-Werror>"
 		)
 endif ()
@@ -42,7 +42,6 @@ target_link_libraries (Demo PRIVATE
 						gin_dsp
 						gin_metadata
 						gin_network
-						gin_simd
 
 						juce::juce_cryptography
 						juce::juce_data_structures
@@ -81,7 +80,6 @@ target_compile_definitions (Demo PRIVATE
 								JUCE_DISPLAY_SPLASH_SCREEN=0
 								JUCE_MODAL_LOOPS_PERMITTED=0
 								JUCE_WEB_BROWSER=0
-								JUCE_SILENCE_XCODE_15_LINKER_WARNING=1
 								JUCE_COREGRAPHICS_DRAW_ASYNC=1
 							)
 

@@ -152,8 +152,7 @@ private:
 /** A button and text readout that shows the current modulation source
 */
 class ModulationOverview : public juce::Component,
-                           private ModMatrix::Listener,
-                           private juce::Timer
+                           private ModMatrix::Listener
 {
 public:
     ModulationOverview (ModMatrix& mm)
@@ -163,8 +162,6 @@ public:
         learnSourceChanged (modMatrix.getLearn ());
 
         addAndMakeVisible (button);
-        
-        name.setInterceptsMouseClicks (false, false);
         addAndMakeVisible (name);
     }
 
@@ -174,40 +171,6 @@ public:
     }
 
 private:
-    void visibilityChanged() override
-    {
-        if (isVisible())
-            startTimerHz (60);
-        else
-            stopTimer();
-        
-        timerCallback();
-    }
-    
-    void timerCallback() override
-    {
-        auto phase = float (std::fmod (juce::Time::getMillisecondCounterHiRes() / 2000.0f, 1.0f));
-        
-        auto c1 = findColour (GinLookAndFeel::whiteColourId);
-        auto c2 = findColour (GinLookAndFeel::accentColourId);
-        
-        if (phase < 0.5f)
-            phase *= 2.0f;
-        else
-            phase = 1.0f - ((phase - 0.5f) * 2.0f);
-        
-        auto col = c1.overlaidWith (c2.withAlpha (phase));
-        
-        button.setColour (GinLookAndFeel::whiteColourId, col);
-        name.setColour (juce::Label::textColourId, col);
-    }
-    
-    void mouseUp (const juce::MouseEvent& e) override
-    {
-        if (e.mouseWasClicked())
-            modMatrix.disableLearn();
-    }
-    
     void resized() override
     {
         auto rc = getLocalBounds();
@@ -231,8 +194,6 @@ private:
 
     ModulationSourceButton button { modMatrix, {} };
     juce::Label name;
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ModulationOverview)
 };
 
 //==============================================================================
@@ -347,9 +308,9 @@ private:
 
     void paintListBoxItem (int, juce::Graphics&, int, int, bool) override {}
 
-    juce::Component* refreshComponentForRow (int row, bool, juce::Component* c) override
+    juce::Component* refreshComponentForRow (int row, bool, Component* c) override
     {
-        auto rowComponent = dynamic_cast<Row*>(c);
+        auto rowComponent = (Row*)c;
         if (rowComponent == nullptr)
             rowComponent = new Row (*this);
 
@@ -369,7 +330,6 @@ private:
         Row (ModMatrixBox& o)
             : owner (o)
         {
-            addAndMakeVisible (enableButton);
             addAndMakeVisible (deleteButton);
             addAndMakeVisible (depth);
             addAndMakeVisible (src);
@@ -383,35 +343,17 @@ private:
             depth.setPopupDisplayEnabled (true, true, findParentComponentOfClass<juce::AudioProcessorEditor>());
             depth.setDoubleClickReturnValue (true, 0.0);
 
-            enableButton.onClick = [this]
-            {
-                if (row >= 0 && row < owner.assignments.size())
-                {
-                    auto& a = owner.assignments.getReference (row);
-                    
-                    auto e = owner.modMatrix.getModEnable (a.src, ModDstId (a.dst->getModIndex()));
-                    owner.modMatrix.setModEnable (a.src, ModDstId (a.dst->getModIndex()), ! e);
-                    enableButton.setToggleState (! e, juce::dontSendNotification);
-                }
-            };
-
             deleteButton.onClick = [this]
             {
-                if (row >= 0 && row < owner.assignments.size())
-                {
-                    auto& a = owner.assignments.getReference (row);
-                    owner.modMatrix.clearModDepth (a.src, ModDstId (a.dst->getModIndex()));
-                }
+                auto& a = owner.assignments.getReference (row);
+                owner.modMatrix.clearModDepth (a.src, ModDstId (a.dst->getModIndex()));
             };
         }
 
         void sliderValueChanged (juce::Slider*) override
         {
-            if (row >= 0 && row < owner.assignments.size())
-            {
-                auto& a = owner.assignments.getReference (row);
-                owner.modMatrix.setModDepth (a.src, ModDstId (a.dst->getModIndex()), (float) depth.getValue());
-            }
+            auto& a = owner.assignments.getReference (row);
+            owner.modMatrix.setModDepth (a.src, ModDstId (a.dst->getModIndex()), (float) depth.getValue());
         }
 
         void update (int idx)
@@ -423,9 +365,6 @@ private:
                 auto& a = owner.assignments.getReference (idx);
                 src.setText (owner.modMatrix.getModSrcName (a.src), juce::dontSendNotification);
                 dst.setText (a.dst->getName (100), juce::dontSendNotification);
-
-                auto e = owner.modMatrix.getModEnable (a.src, ModDstId (a.dst->getModIndex()));
-                enableButton.setToggleState (e, juce::dontSendNotification);
 
                 depth.setValue (owner.modMatrix.getModDepth (a.src, ModDstId (a.dst->getModIndex())));
             }
@@ -442,8 +381,7 @@ private:
 
             int h = rc.getHeight();
 
-            enableButton.setBounds (rc.removeFromLeft (h));
-            deleteButton.setBounds (rc.removeFromRight (h));
+            deleteButton.setBounds (rc.removeFromLeft (h));
             rc.removeFromLeft (2);
             depth.setBounds (rc.removeFromLeft (50));
 
@@ -460,7 +398,6 @@ private:
         juce::Label src;
         juce::Label dst;
 
-        SVGButton enableButton { "enable", Assets::power };
         SVGButton deleteButton { "delete", Assets::del };
     };
 

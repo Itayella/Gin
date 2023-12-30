@@ -35,11 +35,9 @@ void ModMatrix::stateUpdated (const juce::ValueTree& vt)
         {
             if (! c.hasType ("MODITEM")) continue;
 
-            auto src = c.getProperty ("srcId").toString();
-            auto dst = c.getProperty ("dstId").toString();
-
-            auto f = float (c.getProperty ("depth", 0.0f));
-            auto e = bool (c.getProperty ("enabled", true));
+            juce::String src = c.getProperty ("srcId");
+            float f    = c.getProperty ("depth");
+            juce::String dst = c.getProperty ("dstId");
 
             if (src.isNotEmpty() && dst.isNotEmpty())
             {
@@ -47,7 +45,6 @@ void ModMatrix::stateUpdated (const juce::ValueTree& vt)
                 s.id = lookupSrc (src);
                 s.poly = getModSrcPoly (s.id);
                 s.depth = f;
-                s.enabled = e;
 
                 for (auto& pi : parameters)
                 {
@@ -76,7 +73,6 @@ void ModMatrix::updateState (juce::ValueTree& vt)
             auto c = juce::ValueTree ("MODITEM");
             c.setProperty ("srcId", sources[src.id.id].id, nullptr);
             c.setProperty ("depth", src.depth, nullptr);
-            c.setProperty ("enabled", src.enabled, nullptr);
             c.setProperty ("dstId", pi.parameter->getUid(), nullptr);
 
             mm.addChild (c, -1, nullptr);
@@ -117,7 +113,7 @@ ModSrcId ModMatrix::addPolyModSource (const juce::String& id, const juce::String
     return ModSrcId (si.index);
 }
 
-void ModMatrix::addParameter (Parameter* p, bool poly, float smoothingTime)
+void ModMatrix::addParameter (Parameter* p, bool poly)
 {
     p->setModMatrix (this);
     p->setModIndex (parameters.size());
@@ -125,7 +121,6 @@ void ModMatrix::addParameter (Parameter* p, bool poly, float smoothingTime)
     ParamInfo pi;
     pi.poly = poly;
     pi.parameter = p;
-    pi.smoothingTime = smoothingTime;
 
     parameters.add (pi);
 }
@@ -134,20 +129,18 @@ void ModMatrix::setSampleRate (double sr)
 {
     sampleRate = sr;
 
-    for (auto idx = 0; auto& s : smoothers)
+    for (auto& s : smoothers)
     {
         s.setSampleRate (sr);
-        s.setTime (parameters[idx].smoothingTime);
-        idx++;
+        s.setTime (0.02);
     }
 
     for (auto& v : voices)
     {
-        for (auto idx = 0; auto& s : v->smoothers)
+        for (auto& s : v->smoothers)
         {
             s.setSampleRate (sr);
-            s.setTime (parameters[idx].smoothingTime);
-            idx++;
+            s.setTime (0.02);
         }
     }
 }
@@ -183,26 +176,6 @@ bool ModMatrix::isModulated (ModDstId param)
     if (pi.sources.size() > 0)
         return true;
     return false;
-}
-
-bool ModMatrix::getModEnable (ModSrcId src, ModDstId param)
-{
-    auto& pi = parameters.getReference (param.id);
-    for (auto& si : pi.sources)
-        if (si.id == src)
-            return si.enabled;
-
-    return false;
-}
-
-void ModMatrix::setModEnable (ModSrcId src, ModDstId param, bool b)
-{
-    auto& pi = parameters.getReference (param.id);
-    for (auto& si : pi.sources)
-        if (si.id == src)
-            si.enabled = b;
-
-    listeners.call ([&] (Listener& l) { l.modMatrixChanged(); });
 }
 
 float ModMatrix::getModDepth (ModSrcId src, ModDstId param)

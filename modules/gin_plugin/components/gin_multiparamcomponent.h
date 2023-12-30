@@ -54,27 +54,14 @@ protected:
 
     void watchParam (Parameter* p)
     {
-        if (p != nullptr)
-        {
-            p->addListener (this);
-            params.add (p);
-        }
-    }
-
-    void unwatchParam (Parameter* p)
-    {
-        if (p != nullptr)
-        {
-            p->removeListener (this);
-            params.removeFirstMatchingValue (p);
-        }
+        p->addListener (this);
+        params.add (p);
     }
 
     void unwatchParams()
     {
         for (auto p : params)
             p->removeListener (this);
-        params.clear();
     }
 
     virtual void paramChanged ()                { repaint ();               }

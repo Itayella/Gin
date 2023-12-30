@@ -21,7 +21,7 @@ public:
 private:
     void setupParser();
 
-    bool parseLayout (const juce::String& content);
+    void parseLayout (const juce::String& content);
     int parse (const juce::var& equation, int equationIndex);
 
     void doComponent (const juce::String& currentPath, const juce::var& components);

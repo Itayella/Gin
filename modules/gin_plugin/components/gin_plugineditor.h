@@ -24,8 +24,6 @@ private:
 
     Processor& slProc;
     juce::String updateUrl;
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(UpdateChecker)
 };
 
 //==============================================================================
@@ -50,8 +48,6 @@ private:
 
     Processor& slProc;
     juce::String newsUrl;
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(NewsChecker)
 };
 
 //==============================================================================
@@ -80,9 +76,8 @@ public:
 
         juce::ValueTree state (ginProcessor.state);
 
-        if (auto inst = state.getChildWithName ("instance"); inst.isValid())
-            if (inst.hasProperty ("width") && inst.hasProperty ("height"))
-                setSize (inst["width"], inst["height"]);
+        if (state.hasProperty ("width") && state.hasProperty ("height"))
+            setSize (state["width"], state["height"]);
 
         resized();
     }
@@ -95,9 +90,8 @@ public:
         {
             resizer->setBounds (juce::Rectangle<int> (r).removeFromRight (15).removeFromBottom (15));
 
-            auto inst = ginProcessor.state.getOrCreateChildWithName ("instance", nullptr);
-            inst.setProperty ("width", getWidth(), nullptr);
-            inst.setProperty ("height", getHeight(), nullptr);
+            ginProcessor.state.setProperty ("width", getWidth(), nullptr);
+            ginProcessor.state.setProperty ("height", getHeight(), nullptr);
         }
     }
 
@@ -117,13 +111,6 @@ public:
 
         g.setColour (findColour (PluginLookAndFeel::accentColourId, true).withMultipliedAlpha (0.35f));
         g.fillRect (rc);
-    }
-
-    void addControl (ParamComponent* c, int x = 0, int y = 0, int w = 1, int h = 1)
-    {
-        controls.add (c);
-        addAndMakeVisible (c);
-        c->setBounds (getGridArea (x, y, w, h));
     }
 
     virtual juce::Rectangle<int> getControlsArea();
@@ -175,7 +162,6 @@ public:
     void setShowPresets (bool);
     void setShowMenu (bool);
     void setShowInfo (bool);
-    void setBrowseButtonState (bool s) { browseButton.setToggleState (s, juce::dontSendNotification); }
 
 protected:
     void paint (juce::Graphics& g) override;
@@ -197,8 +183,8 @@ protected:
     SVGButton addButton { "add", gin::Assets::add };
     SVGButton deleteButton { "delete", gin::Assets::del };
     SVGButton browseButton { "browse", gin::Assets::browse };
-    SVGButton nextButton { "next", gin::Assets::next, 15 };
-    SVGButton prevButton { "prev", gin::Assets::prev, 15 };
+    SVGButton nextButton { "next", gin::Assets::next, 4 };
+    SVGButton prevButton { "prev", gin::Assets::prev, 4 };
 
     SVGButton menuButton { "menu", gin::Assets::menu };
     SVGButton infoButton { "info", gin::Assets::info };
@@ -210,29 +196,26 @@ protected:
 //==============================================================================
 /** Plugin editor
 */
-class ProcessorEditor : public ProcessorEditorBase,
-                        protected juce::AsyncUpdater
+class ProcessorEditor : public ProcessorEditorBase
 {
 public:
     ProcessorEditor (Processor&) noexcept;
     ProcessorEditor (Processor&, int cx, int cy) noexcept;
     ~ProcessorEditor() override;
-
+    
     virtual void addMenuItems (juce::PopupMenu&) {}
 
     virtual void showAboutInfo();
 
-    void refreshProgramsList();
     void refreshPatchBrowser();
     void showPatchBrowser (bool p);
 
     Processor& slProc;
 
 protected:
-    void handleAsyncUpdate() override;
     void paint (juce::Graphics& g) override;
     void resized() override;
-
+    
     std::unique_ptr<UpdateChecker> updateChecker;
     std::unique_ptr<NewsChecker> newsChecker;
 

@@ -28,42 +28,22 @@ public:
     void setSampleRate (double sr)  { sampleRate = sr; }
     void noteOn (float p = -1);
 
-    void process (float note, const Params& params, juce::AudioSampleBuffer& buffer)
-    {
-        buffer.clear();
-        processAdding (note, params, buffer);
-    }
+    void process (float note, const Params& params, juce::AudioSampleBuffer& buffer);
+    void process (float noteL, float noteR, const Params& params, juce::AudioSampleBuffer& buffer);
 
-    void processAdding (float note, const Params& params, juce::AudioSampleBuffer& buffer)
-    {
-        float freq = float (std::min (sampleRate / 2.0, 440.0 * std::pow (2.0, (note - 69.0) / 12.0)));
-        float delta = 1.0f / (float ((1.0f / freq) * sampleRate));
-
-        int samps = buffer.getNumSamples();
-        auto l = buffer.getWritePointer (0);
-        auto r = buffer.getWritePointer (1);
-
-        for (int i = 0; i < samps; i++)
-        {
-            auto s = bllt.process (params.wave, note, phase, params.pw);
-            *l++ += s * params.leftGain;
-            *r++ += s * params.rightGain;
-
-            phase += delta;
-            while (phase >= 1.0f)
-                phase -= 1.0f;
-        }
-    }
+    void processAdding (float note, const Params& params, juce::AudioSampleBuffer& buffer);
+    void processAdding (float noteL, float noteR, const Params& params, juce::AudioSampleBuffer& buffer);
 
 private:
     BandLimitedLookupTables& bllt;
     double sampleRate = 44100.0;
-    float phase = 0.0f;
+    float phaseL = 0.0f, phaseR = 0.0f;
 };
 
 struct VoicedOscillatorParams
 {
     int voices = 1;
+    int vcTrns = 0;
     float pan = 0.0f;
     float spread = 0.0f;
     float detune = 0.0f;
@@ -91,12 +71,6 @@ public:
             o->noteOn (phase);
     }
 
-    void noteOn (float phases[])
-    {
-        for (auto idx = 0; auto o : oscillators)
-            o->noteOn (phases[idx++]);
-    }
-
     void process (float note, const P& params, juce::AudioSampleBuffer& buffer)
     {
         buffer.clear();
@@ -122,7 +96,7 @@ public:
 
             float basePan = params.pan - params.spread;
             float panDelta = (params.spread * 2) / (params.voices - 1);
-
+            
             for (int i = 0; i < params.voices; i++)
             {
                 float pan = juce::jlimit (-1.0f, 1.0f, basePan + panDelta * i);
@@ -130,7 +104,12 @@ public:
                 p.leftGain  = params.gain * (1.0f - pan) / float (std::sqrt (params.voices));
                 p.rightGain = params.gain * (1.0f + pan) / float (std::sqrt (params.voices));
 
-                oscillators[i]->processAdding (baseNote + noteDelta * i, p, buffer);
+                if (params.vcTrns == 0)
+                    oscillators[i]->processAdding (baseNote + noteDelta * i, p, buffer);
+                else
+                    oscillators[i]->processAdding (baseNote + noteDelta * i + params.vcTrns,
+                                                   baseNote + noteDelta * i,
+                                                   p, buffer);
             }
         }
     }

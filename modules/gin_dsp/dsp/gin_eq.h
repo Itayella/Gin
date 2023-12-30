@@ -20,8 +20,6 @@ public:
         lowshelf,
         highshelf,
         peak,
-        highpass,
-        lowpass,
     };
 
     EQ (int numBands)
@@ -56,8 +54,6 @@ public:
             {
                 case lowshelf:  return Filter::lowshelf;
                 case highshelf: return Filter::highshelf;
-                case lowpass:   return Filter::lowpass;
-                case highpass:  return Filter::highpass;
                 case peak:      return Filter::peak;
                 default:
                     jassertfalse;

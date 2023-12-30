@@ -12,8 +12,8 @@ public:
 
     void setParams (Parameter::Ptr beat, Parameter::Ptr length, Parameter::Ptr* level, Parameter::Ptr enable);
 
-    std::function<std::vector<float>()> phaseCallback;
-
+    std::function<float()> phaseCallback;
+    
 private:
     void paint (juce::Graphics& g) override;
     void resized() override;
@@ -32,7 +32,7 @@ private:
     juce::Path path;
     int maxSteps;
     bool dirty = true;
-    std::vector<float> curPhases;
+    float curPhase = 0.0f;
     std::map<int,float> curve;
 
 private:

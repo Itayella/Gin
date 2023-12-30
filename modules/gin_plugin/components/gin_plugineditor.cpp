@@ -222,20 +222,14 @@ TitleBar::TitleBar (ProcessorEditor& e, Processor& p)
     };
     addButton.onClick = [this]
     {
-        Program* prog = nullptr;
-        
-        int progIdx = slProc.getCurrentProgram();
-        if (progIdx > 0)
-            prog = slProc.getPrograms()[progIdx];
-        
         auto w = std::make_shared<gin::PluginAlertWindow> ("Create preset:", "", juce::AlertWindow::NoIcon, getParentComponent());
         w->setLookAndFeel (slProc.lf.get());
-        w->addTextEditor ("name", prog != nullptr ? prog->name : juce::String(), "Name:");
+        w->addTextEditor ("name", "", "Name:");
 
         if (hasBrowser)
         {
-            w->addTextEditor ("author", prog != nullptr ? prog->author : juce::String(), "Author:");
-            w->addTextEditor ("tags", prog != nullptr ? juce::StringArray (prog->tags).joinIntoString (" ") : juce::String(), "Tags:");
+            w->addTextEditor ("author", "", "Author:");
+            w->addTextEditor ("tags", "", "Tags:");
         }
 
         w->addButton ("OK", 1, juce::KeyPress (juce::KeyPress::returnKey));
@@ -246,9 +240,9 @@ TitleBar::TitleBar (ProcessorEditor& e, Processor& p)
             w->setVisible (false);
             if (ret == 1)
             {
-                auto txt = juce::File::createLegalFileName (w->getTextEditor ("name")->getText()).trim();
-                auto aut = (hasBrowser) ? juce::File::createLegalFileName (w->getTextEditor ("author")->getText()).trim() : juce::String();
-                auto tag = (hasBrowser) ? juce::File::createLegalFileName (w->getTextEditor ("tags")->getText()).trim() : juce::String();
+                auto txt = juce::File::createLegalFileName (w->getTextEditor ("name")->getText());
+                auto aut = (hasBrowser) ? juce::File::createLegalFileName (w->getTextEditor ("author")->getText()) : juce::String();
+                auto tag = (hasBrowser) ? juce::File::createLegalFileName (w->getTextEditor ("tags")->getText()) : juce::String();
 
                 if (slProc.hasProgram (txt))
                 {
@@ -378,9 +372,8 @@ void TitleBar::resized()
 
     if (hasPresets)
     {
-        auto sz = programsRC.getHeight();
-        prevButton.setBounds (programsRC.removeFromLeft (sz).withSizeKeepingCentre (sz, sz));
-        nextButton.setBounds (programsRC.removeFromRight (sz).withSizeKeepingCentre (sz, sz));
+        prevButton.setBounds (programsRC.removeFromLeft (programsRC.getHeight()).withSizeKeepingCentre (12, 12));
+        nextButton.setBounds (programsRC.removeFromRight (programsRC.getHeight()).withSizeKeepingCentre (12, 12));
     }
     else
     {
@@ -397,11 +390,7 @@ void TitleBar::refreshPrograms()
     programs.clear();
 
     for (int i = 0; i < slProc.getPrograms().size(); i++)
-    {
         programs.addItem (slProc.getProgramName (i), i + 1);
-        if (i == 0)
-            programs.addSeparator();
-    }
 
     programs.setSelectedItemIndex (slProc.getCurrentProgram(), juce::dontSendNotification);
     deleteButton.setEnabled (slProc.getCurrentProgram() != 0);
@@ -574,8 +563,6 @@ ProcessorEditor::ProcessorEditor (Processor& p) noexcept
     addChildComponent (patchBrowser);
 
     titleBar.refreshPrograms();
-
-    triggerAsyncUpdate();
 }
 
 ProcessorEditor::ProcessorEditor (Processor& p, int cx_, int cy_) noexcept
@@ -589,22 +576,11 @@ ProcessorEditor::ProcessorEditor (Processor& p, int cx_, int cy_) noexcept
     addChildComponent (patchBrowser);
 
     titleBar.refreshPrograms();
-
-    triggerAsyncUpdate();
 }
 
 ProcessorEditor::~ProcessorEditor()
 {
     setLookAndFeel (nullptr);
-}
-
-void ProcessorEditor::handleAsyncUpdate()
-{
-    if (ginProcessor.state.getChildWithName ("instance").getProperty ("browserOpen", false))
-    {
-        titleBar.setBrowseButtonState (true);
-        showPatchBrowser (true);
-    }
 }
 
 void ProcessorEditor::paint (juce::Graphics& g)
@@ -665,11 +641,6 @@ void ProcessorEditor::showAboutInfo()
     });
 }
 
-void ProcessorEditor::refreshProgramsList()
-{
-    titleBar.refreshPrograms();
-}
-
 void ProcessorEditor::refreshPatchBrowser()
 {
     patchBrowser.refresh();
@@ -679,6 +650,4 @@ void ProcessorEditor::showPatchBrowser (bool p)
 {
     patchBrowser.toFront (false);
     patchBrowser.setVisible (p);
-
-    ginProcessor.state.getChildWithName ("instance").setProperty ("browserOpen", p, nullptr);
 }

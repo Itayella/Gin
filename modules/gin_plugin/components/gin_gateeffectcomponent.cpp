@@ -2,8 +2,8 @@ GateEffectComponent::GateEffectComponent (int maxSteps_)
     : maxSteps (maxSteps_)
 {
     setName ("pattern");
-    l.resize (size_t (maxSteps));
-    r.resize (size_t (maxSteps));
+    l.resize (maxSteps);
+    r.resize (maxSteps);
 }
 
 void GateEffectComponent::setParams (Parameter::Ptr length_, Parameter::Ptr* l_, Parameter::Ptr* r_, Parameter::Ptr enable_)
@@ -15,8 +15,8 @@ void GateEffectComponent::setParams (Parameter::Ptr length_, Parameter::Ptr* l_,
     
     for (int i = 0; i < 16; i++)
     {
-        watchParam (l[size_t (i)] = l_[i]);
-        watchParam (r[size_t (i)] = r_[i]);
+        watchParam (l[i] = l_[i]);
+        watchParam (r[i] = r_[i]);
     }
 }
 
@@ -44,11 +44,11 @@ void GateEffectComponent::mouseDrag (const juce::MouseEvent& e)
 
     if (! dragging)
     {
-        setOn = ! data[size_t (step)]->isOn();
+        setOn = ! data[step]->isOn();
         dragging = true;
     }
 
-    data[size_t (step)]->setUserValue (setOn ? 1.0f : 0.0f);
+    data[step]->setUserValue (setOn ? 1.0f : 0.0f);
 
     repaint();
 }
@@ -67,19 +67,19 @@ void GateEffectComponent::paint (juce::Graphics& g)
     for (int i = 0; i <= getNumSteps(); i++)
     {
         auto x = juce::roundToInt (rc.getX() + i * w);
-        g.drawLine (float (x), rc.getY(), float (x), rc.getBottom ());
+        g.drawLine (x, rc.getY(), x, rc.getBottom ());
     }
     g.drawLine (rc.getX(), rc.getCentreY(), rc.getRight(), rc.getCentreY());
 
     g.setColour (dimIfNeeded (findColour (GinLookAndFeel::accentColourId).withAlpha (0.7f)));
     for (int i = 0; i < getNumSteps(); i++)
     {
-        if (l[size_t (i)]->isOn())
+        if (l[i]->isOn())
         {
             auto rs = juce::Rectangle<float> (rc.getX() + i * w, rc.getY(), w, rc.getCentreY() - rc.getY());
             g.fillRect (rs.reduced (3));
         }
-        if (r[size_t (i)]->isOn())
+        if (r[i]->isOn())
         {
             auto rs = juce::Rectangle<float> (rc.getX() + i * w, rc.getCentreY(), w, rc.getBottom() - rc.getCentreY());
             g.fillRect (rs.reduced (3));

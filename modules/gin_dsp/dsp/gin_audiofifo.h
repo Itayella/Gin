@@ -28,7 +28,6 @@ public:
         buffer.setSize (numChannels, numSamples);
     }
 
-    int getNumChannels() const noexcept     { return buffer.getNumChannels(); }
     int getFreeSpace() const noexcept       { return fifo.getFreeSpace(); }
     int getNumReady() const noexcept        { return fifo.getNumReady(); }
     void reset() noexcept                   { fifo.reset(); }

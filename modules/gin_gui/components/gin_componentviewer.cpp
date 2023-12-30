@@ -235,8 +235,6 @@ public:
     juce::TextEditor mouseDetails, componentDetails, snapshotDetails;
     juce::Slider zoom;
     Snapshot snapshot;
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ContentComponent)
 };
 
 //==============================================================================
